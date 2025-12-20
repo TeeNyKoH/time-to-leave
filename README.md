@@ -1,7 +1,6 @@
 # time-to-leave
 
 ![Demo screenshot](public/demo.jpeg)
-_Bus stop road names have been redacted here._
 
 ## A Google Nest Hub Companion
 
