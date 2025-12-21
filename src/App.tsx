@@ -16,7 +16,7 @@ function App() {
             </div>
 
             {/* Right side: Bus Timings */}
-            <div className="flex-1 flex items-start justify-center px-4 py-2 overflow-y-auto">
+            <div className="flex-1 flex items-start justify-center px-4 overflow-y-auto">
                 <BusServices />
             </div>
         </div>

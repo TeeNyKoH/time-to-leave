@@ -145,7 +145,7 @@ export function BusServices() {
                                 <ItemTitle className="text-2xl font-semibold">
                                     {bus.minutesAway <= 1
                                         ? "Arriving"
-                                        : `${bus.minutesAway} mins`}
+                                        : `${bus.minutesAway} min`}
                                 </ItemTitle>
                                 <ItemDescription className="text-left text-base">
                                     {bus.roadName}
