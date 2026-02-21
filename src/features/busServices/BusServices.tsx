@@ -118,57 +118,63 @@ export function BusServices() {
     return (
         <div className="flex w-full flex-col gap-2">
             <ItemGroup>
-                {buses.map((bus, index) => (
-                    <React.Fragment
-                        key={
-                            bus.service +
-                            bus.busStopCode +
-                            bus.estimatedArrival.getTime()
-                        }
-                    >
-                        <Item>
-                            <ItemMedia className="w-20 justify-start flex-col items-center gap-0.5">
-                                <h2 className="scroll-m-20 text-5xl font-semibold tracking-tight leading-tight first:mt-0">
-                                    {bus.service}
-                                </h2>
-                                <span className="text-xs text-muted-foreground leading-none">
-                                    {bus.type === "SD"
-                                        ? "single"
-                                        : bus.type === "DD"
-                                        ? "double"
-                                        : bus.type === "BD"
-                                        ? "bendy"
-                                        : ""}
-                                </span>
-                            </ItemMedia>
-                            <ItemContent className="gap-1">
-                                <ItemTitle className="text-2xl font-semibold">
-                                    {bus.minutesAway <= 1
-                                        ? "Arriving"
-                                        : `${bus.minutesAway} min`}
-                                </ItemTitle>
-                                <ItemDescription className="text-left text-base">
-                                    {bus.roadName}
-                                </ItemDescription>
-                            </ItemContent>
-                            <ItemActions>
-                                <div
-                                    className={`w-3 h-3 rounded-full ${
-                                        bus.load === "SEA"
-                                            ? "bg-green-500"
-                                            : bus.load === "SDA"
-                                            ? "bg-amber-500"
-                                            : bus.load === "LSD"
-                                            ? "bg-red-500"
-                                            : "bg-gray-500"
-                                    }`}
-                                    title={bus.load}
-                                />
-                            </ItemActions>
-                        </Item>
-                        {index !== buses.length - 1 && <ItemSeparator />}
-                    </React.Fragment>
-                ))}
+                {buses.length === 0 ? (
+                    <p className="text-muted-foreground text-sm text-center py-4">
+                        No buses in operation
+                    </p>
+                ) : (
+                    buses.map((bus, index) => (
+                        <React.Fragment
+                            key={
+                                bus.service +
+                                bus.busStopCode +
+                                bus.estimatedArrival.getTime()
+                            }
+                        >
+                            <Item>
+                                <ItemMedia className="w-20 justify-start flex-col items-center gap-0.5">
+                                    <h2 className="scroll-m-20 text-5xl font-semibold tracking-tight leading-tight first:mt-0">
+                                        {bus.service}
+                                    </h2>
+                                    <span className="text-xs text-muted-foreground leading-none">
+                                        {bus.type === "SD"
+                                            ? "single"
+                                            : bus.type === "DD"
+                                            ? "double"
+                                            : bus.type === "BD"
+                                            ? "bendy"
+                                            : ""}
+                                    </span>
+                                </ItemMedia>
+                                <ItemContent className="gap-1">
+                                    <ItemTitle className="text-2xl font-semibold">
+                                        {bus.minutesAway <= 1
+                                            ? "Arriving"
+                                            : `${bus.minutesAway} min`}
+                                    </ItemTitle>
+                                    <ItemDescription className="text-left text-base">
+                                        {bus.roadName}
+                                    </ItemDescription>
+                                </ItemContent>
+                                <ItemActions>
+                                    <div
+                                        className={`w-3 h-3 rounded-full ${
+                                            bus.load === "SEA"
+                                                ? "bg-green-500"
+                                                : bus.load === "SDA"
+                                                ? "bg-amber-500"
+                                                : bus.load === "LSD"
+                                                ? "bg-red-500"
+                                                : "bg-gray-500"
+                                        }`}
+                                        title={bus.load}
+                                    />
+                                </ItemActions>
+                            </Item>
+                            {index !== buses.length - 1 && <ItemSeparator />}
+                        </React.Fragment>
+                    ))
+                )}
             </ItemGroup>
         </div>
     );
