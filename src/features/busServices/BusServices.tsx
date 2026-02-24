@@ -71,7 +71,7 @@ function CrowdBadge({ load }: { load: string }) {
     );
 }
 
-export function BusServices() {
+export function BusServices({ side }: { side: string }) {
     const [groups, setGroups] = useState<BusServiceGroup[]>([]);
 
     const getBusTime = async (busServices: BusService[]) => {
@@ -150,20 +150,11 @@ export function BusServices() {
     };
 
     useEffect(() => {
-        getBusTime(BUS_SERVICES);
-        const interval = setInterval(() => getBusTime(BUS_SERVICES), 20000);
+        const services = BUS_SERVICES.filter((s) => s.roadName === side);
+        getBusTime(services);
+        const interval = setInterval(() => getBusTime(services), 20000);
         return () => clearInterval(interval);
-    }, []);
-
-    if (groups.length === 0) {
-        return (
-            <div className="flex w-full items-center justify-center py-8">
-                <p className="text-muted-foreground text-sm text-center">
-                    No buses in operation
-                </p>
-            </div>
-        );
-    }
+    }, [side]);
 
     return (
         <div className="flex w-full flex-col divide-y divide-border">
