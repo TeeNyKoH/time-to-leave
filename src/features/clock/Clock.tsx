@@ -7,7 +7,6 @@ export function Clock() {
         const timer = setInterval(() => {
             setTime(new Date());
         }, 1000);
-
         return () => clearInterval(timer);
     }, []);
 
@@ -15,7 +14,7 @@ export function Clock() {
         return date.toLocaleTimeString("en-SG", {
             hour: "2-digit",
             minute: "2-digit",
-            hour12: false,
+            hour12: true,
         });
     };
 
@@ -29,15 +28,13 @@ export function Clock() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center h-full p-4">
-            <div className="text-center">
-                <span className="scroll-m-20 text-8xl font-bold tracking-tight mb-3">
-                    {formatTime(time)}
-                </span>
-                <p className="text-xl text-muted-foreground">
-                    {formatDate(time)}
-                </p>
-            </div>
+        <div className="flex flex-col items-center justify-center h-full gap-0.5">
+            <span className="text-5xl font-bold tracking-tight tabular-nums leading-none">
+                {formatTime(time)}
+            </span>
+            <p className="text-xs text-muted-foreground">
+                {formatDate(time)}
+            </p>
         </div>
     );
 }
