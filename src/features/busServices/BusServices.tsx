@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { LTA_API_BASE_URL, BUS_SERVICES, type BusService } from "@/config";
+import { useState, useEffect, memo } from "react";
+import { LTA_API_BASE_URL, BUS_SERVICES } from "@/config";
 
 type BusTiming = {
     estimatedArrival: Date;
@@ -71,88 +71,110 @@ function CrowdBadge({ load }: { load: string }) {
     );
 }
 
-export function BusServices({ side }: { side: string }) {
+export const BusServices = memo(function BusServices({ side }: { side: string }) {
     const [groups, setGroups] = useState<BusServiceGroup[]>([]);
-
-    const getBusTime = async (busServices: BusService[]) => {
-        const fetchPromises = busServices.map(
-            async ({ serviceNo, busStopCode, roadName }) => {
-                try {
-                    const res = await fetch(
-                        `${LTA_API_BASE_URL}?BusStopCode=${busStopCode}&ServiceNo=${serviceNo}`
-                    );
-
-                    if (!res.ok) {
-                        console.error(
-                            `API error for bus ${serviceNo}:`,
-                            res.status
-                        );
-                        return null;
-                    }
-
-                    const data = await res.json();
-
-                    if (!data.Services || !data.Services[0]) {
-                        return null;
-                    }
-
-                    const svc = data.Services[0];
-                    const timings: BusTiming[] = [
-                        svc.NextBus,
-                        svc.NextBus2,
-                        svc.NextBus3,
-                    ]
-                        .filter((b) => b && b.EstimatedArrival)
-                        .map(
-                            (b: {
-                                EstimatedArrival: string;
-                                Load: string;
-                                Type: string;
-                                Latitude: string;
-                                Longitude: string;
-                            }) => {
-                                const arrivalTime = new Date(
-                                    b.EstimatedArrival
-                                ).getTime();
-                                const now = Date.now();
-                                return {
-                                    estimatedArrival: new Date(
-                                        b.EstimatedArrival
-                                    ),
-                                    load: b.Load,
-                                    type: b.Type,
-                                    minutesAway: Math.max(
-                                        0,
-                                        Math.round((arrivalTime - now) / 60000)
-                                    ),
-                                    isTracked:
-                                        parseFloat(b.Latitude) !== 0 ||
-                                        parseFloat(b.Longitude) !== 0,
-                                };
-                            }
-                        );
-
-                    return { serviceNo, busStopCode, roadName, timings };
-                } catch (error) {
-                    console.error(`Error fetching bus ${serviceNo}:`, error);
-                    return null;
-                }
-            }
-        );
-
-        const results = await Promise.all(fetchPromises);
-        setGroups(
-            results.filter(
-                (r): r is BusServiceGroup =>
-                    r !== null && r.timings.length > 0
-            )
-        );
-    };
 
     useEffect(() => {
         const services = BUS_SERVICES.filter((s) => s.roadName === side);
-        getBusTime(services);
-        const interval = setInterval(() => getBusTime(services), 20000);
+
+        const fetchBusTimes = async () => {
+            const fetchPromises = services.map(
+                async ({ serviceNo, busStopCode, roadName }) => {
+                    try {
+                        const res = await fetch(
+                            `${LTA_API_BASE_URL}?BusStopCode=${busStopCode}&ServiceNo=${serviceNo}`
+                        );
+
+                        if (!res.ok) {
+                            console.error(
+                                `API error for bus ${serviceNo}:`,
+                                res.status
+                            );
+                            return null;
+                        }
+
+                        const data = await res.json();
+
+                        if (!data.Services || !data.Services[0]) {
+                            return null;
+                        }
+
+                        const svc = data.Services[0];
+                        const timings: BusTiming[] = [
+                            svc.NextBus,
+                            svc.NextBus2,
+                            svc.NextBus3,
+                        ]
+                            .filter((b) => b && b.EstimatedArrival)
+                            .map(
+                                (b: {
+                                    EstimatedArrival: string;
+                                    Load: string;
+                                    Type: string;
+                                    Latitude: string;
+                                    Longitude: string;
+                                }) => {
+                                    const arrivalTime = new Date(
+                                        b.EstimatedArrival
+                                    ).getTime();
+                                    const now = Date.now();
+                                    return {
+                                        estimatedArrival: new Date(
+                                            b.EstimatedArrival
+                                        ),
+                                        load: b.Load,
+                                        type: b.Type,
+                                        minutesAway: Math.max(
+                                            0,
+                                            Math.round(
+                                                (arrivalTime - now) / 60000
+                                            )
+                                        ),
+                                        isTracked:
+                                            parseFloat(b.Latitude) !== 0 ||
+                                            parseFloat(b.Longitude) !== 0,
+                                    };
+                                }
+                            );
+
+                        if (timings.length === 0) return null;
+                        return { serviceNo, busStopCode, roadName, timings };
+                    } catch (error) {
+                        console.error(`Error fetching bus ${serviceNo}:`, error);
+                        return null;
+                    }
+                }
+            );
+
+            const results = await Promise.all(fetchPromises);
+            const incoming = results.filter(
+                (r): r is BusServiceGroup => r !== null
+            );
+
+            setGroups((prev) => {
+                // If everything failed, keep existing data on screen
+                if (incoming.length === 0) return prev;
+
+                // Merge: update rows that have fresh data, keep rows that failed
+                const merged = [...prev];
+                incoming.forEach((r) => {
+                    const idx = merged.findIndex(
+                        (g) =>
+                            g.serviceNo === r.serviceNo &&
+                            g.busStopCode === r.busStopCode
+                    );
+                    if (idx >= 0) {
+                        merged[idx] = r;
+                    } else {
+                        merged.push(r);
+                    }
+                });
+                return merged;
+            });
+        };
+
+        fetchBusTimes();
+        const interval = setInterval(fetchBusTimes, 20000);
         return () => clearInterval(interval);
     }, [side]);
 
@@ -181,7 +203,7 @@ export function BusServices({ side }: { side: string }) {
                                 className="flex flex-col gap-1.5 bg-muted/30 rounded-xl px-3 py-2.5 min-w-[100px]"
                             >
                                 {/* Arrival time */}
-                                <span className="text-xl font-semibold leading-none">
+                                <span className="text-xl font-semibold leading-none tabular-nums">
                                     {t.minutesAway <= 1
                                         ? "Arriving"
                                         : `${t.minutesAway} min`}
@@ -210,4 +232,4 @@ export function BusServices({ side }: { side: string }) {
             ))}
         </div>
     );
-}
+});
