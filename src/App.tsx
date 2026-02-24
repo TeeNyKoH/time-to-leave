@@ -7,17 +7,19 @@ import { Weather } from "@/features/weather/Weather";
 function App() {
     return (
         <div className="flex h-full w-full bg-background">
-            {/* Left side: Clock & Weather */}
-            <div className="flex-1 flex flex-col items-center justify-center border-r border-border p-8">
-                <div className="flex flex-col items-center gap-4">
-                    <Clock />
-                    <Weather />
-                </div>
+            {/* Left side: Clock only */}
+            <div className="w-1/3 flex flex-col items-center justify-center border-r border-border p-8">
+                <Clock />
             </div>
 
-            {/* Right side: Bus Timings */}
-            <div className="flex-1 flex items-start justify-center px-4 overflow-y-auto">
-                <BusServices />
+            {/* Right side: Weather (1 row at top) + Bus Timings */}
+            <div className="w-2/3 flex flex-col overflow-hidden">
+                <div className="px-4 pt-4 pb-2 border-b border-border">
+                    <Weather />
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                    <BusServices />
+                </div>
             </div>
         </div>
     );

@@ -51,7 +51,6 @@ export function Weather() {
     useEffect(() => {
         const fetchWeather = async () => {
             try {
-                // API call through Vercel serverless function proxy
                 const response = await fetch(
                     `${WEATHER_API_BASE_URL}?location=${LOCATION}`
                 );
@@ -70,15 +69,13 @@ export function Weather() {
         };
 
         fetchWeather();
-        // Refresh weather every 30 minutes
         const interval = setInterval(fetchWeather, 30 * 60 * 1000);
-
         return () => clearInterval(interval);
     }, []);
 
     if (loading) {
         return (
-            <div className="text-center text-muted-foreground">
+            <div className="text-xs text-muted-foreground">
                 Loading weather...
             </div>
         );
@@ -86,7 +83,7 @@ export function Weather() {
 
     if (error || !weather) {
         return (
-            <div className="text-center text-muted-foreground">
+            <div className="text-xs text-muted-foreground">
                 Weather unavailable
             </div>
         );
@@ -94,58 +91,47 @@ export function Weather() {
 
     const today = weather.forecast.forecastday[0];
 
-    // Get hourly forecasts for specific time periods:
-    // Morning: 0700-1000 (7, 8, 9, 10)
-    // Evening: 1700-2000 (17, 18, 19, 20)
-    const morningHours = [7, 8, 9, 10];
-    const eveningHours = [17, 18, 19, 20];
-    const targetHours = [...morningHours, ...eveningHours];
-
-    // Filter and get hourly data for the specified time periods
-    const hourlyForecasts = today.hour.filter((h) => {
-        const hourTime = new Date(h.time_epoch * 1000);
-        return targetHours.includes(hourTime.getHours());
-    });
+    // Get the next 4 upcoming hours from current time
+    const currentHour = new Date().getHours();
+    const upcomingForecasts = today.hour
+        .filter((h) => {
+            const hour = new Date(h.time_epoch * 1000).getHours();
+            return hour >= currentHour;
+        })
+        .slice(0, 4);
 
     return (
-        <div className="flex flex-col items-center gap-4 mt-4 max-w-full">
-            {/* Hourly Forecast for 0700-1000 and 1700-2000 */}
-            {hourlyForecasts.length > 0 && (
-                <div className="w-full max-w-full overflow-x-auto">
-                    <div className="grid grid-cols-4 gap-3 min-w-0">
-                        {hourlyForecasts.map((hour) => {
-                            const time = new Date(hour.time_epoch * 1000);
-                            const hourStr = time.toLocaleTimeString("en-SG", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                hour12: false,
-                            });
+        <div className="grid grid-cols-4 gap-2 w-full">
+            {upcomingForecasts.map((hour) => {
+                const time = new Date(hour.time_epoch * 1000);
+                const hourStr = time.toLocaleTimeString("en-SG", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false,
+                });
 
-                            return (
-                                <div
-                                    key={hour.time}
-                                    className="flex flex-col items-center gap-2 bg-muted/30 rounded-lg p-3"
-                                >
-                                    <div className="text-base text-muted-foreground">
-                                        {hourStr}
-                                    </div>
-                                    <img
-                                        src={`https:${hour.condition.icon}`}
-                                        alt={hour.condition.text}
-                                        className="w-12 h-12"
-                                    />
-                                    <div className="text-xl font-medium">
-                                        {Math.round(hour.temp_c)}°
-                                    </div>
-                                    <div className="text-base text-blue-400">
-                                        {hour.chance_of_rain}%
-                                    </div>
-                                </div>
-                            );
-                        })}
+                return (
+                    <div
+                        key={hour.time}
+                        className="flex flex-col items-center gap-1 bg-muted/30 rounded-lg p-2"
+                    >
+                        <div className="text-xs text-muted-foreground">
+                            {hourStr}
+                        </div>
+                        <img
+                            src={`https:${hour.condition.icon}`}
+                            alt={hour.condition.text}
+                            className="w-8 h-8"
+                        />
+                        <div className="text-sm font-medium">
+                            {Math.round(hour.temp_c)}°
+                        </div>
+                        <div className="text-xs text-blue-400">
+                            {hour.chance_of_rain}%
+                        </div>
                     </div>
-                </div>
-            )}
+                );
+            })}
         </div>
     );
 }
