@@ -1,6 +1,6 @@
-import { useState, useEffect, memo } from "react";
+import { useState, useEffect } from "react";
 
-export const Clock = memo(function Clock() {
+export function Clock() {
     const [time, setTime] = useState(new Date());
 
     useEffect(() => {
@@ -31,7 +31,7 @@ export const Clock = memo(function Clock() {
     return (
         <div className="flex flex-col items-center justify-center h-full p-4">
             <div className="text-center">
-                <span className="scroll-m-20 text-8xl font-bold tracking-tight mb-3 tabular-nums">
+                <span className="scroll-m-20 text-8xl font-bold tracking-tight mb-3">
                     {formatTime(time)}
                 </span>
                 <p className="text-xl text-muted-foreground">
@@ -40,4 +40,4 @@ export const Clock = memo(function Clock() {
             </div>
         </div>
     );
-});
+}
