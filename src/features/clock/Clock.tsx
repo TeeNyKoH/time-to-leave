@@ -28,13 +28,20 @@ export function Clock() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center h-full gap-0.5">
-            <span className="text-5xl font-bold tracking-tight tabular-nums leading-none">
+        <div className="flex flex-col items-center justify-center h-full gap-6 py-6">
+            <span
+                className="text-4xl font-bold tracking-tight tabular-nums"
+                style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+            >
                 {formatTime(time)}
             </span>
-            <p className="text-xs text-muted-foreground">
+            <div className="w-px h-8 bg-border flex-shrink-0" />
+            <span
+                className="text-xs text-muted-foreground text-center"
+                style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+            >
                 {formatDate(time)}
-            </p>
+            </span>
         </div>
     );
 }
