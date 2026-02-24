@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { LTA_API_BASE_URL, BUS_SERVICES, type BusService } from "@/config";
+import { useState, useEffect, memo } from "react";
+import { LTA_API_BASE_URL, BUS_SERVICES } from "@/config";
 
 type BusTiming = {
     estimatedArrival: Date;
@@ -71,99 +71,112 @@ function CrowdBadge({ load }: { load: string }) {
     );
 }
 
-export function BusServices() {
+export const BusServices = memo(function BusServices({ side }: { side: string }) {
     const [groups, setGroups] = useState<BusServiceGroup[]>([]);
 
-    const getBusTime = async (busServices: BusService[]) => {
-        const fetchPromises = busServices.map(
-            async ({ serviceNo, busStopCode, roadName }) => {
-                try {
-                    const res = await fetch(
-                        `${LTA_API_BASE_URL}?BusStopCode=${busStopCode}&ServiceNo=${serviceNo}`
-                    );
-
-                    if (!res.ok) {
-                        console.error(
-                            `API error for bus ${serviceNo}:`,
-                            res.status
-                        );
-                        return null;
-                    }
-
-                    const data = await res.json();
-
-                    if (!data.Services || !data.Services[0]) {
-                        return null;
-                    }
-
-                    const svc = data.Services[0];
-                    const timings: BusTiming[] = [
-                        svc.NextBus,
-                        svc.NextBus2,
-                        svc.NextBus3,
-                    ]
-                        .filter((b) => b && b.EstimatedArrival)
-                        .map(
-                            (b: {
-                                EstimatedArrival: string;
-                                Load: string;
-                                Type: string;
-                                Latitude: string;
-                                Longitude: string;
-                            }) => {
-                                const arrivalTime = new Date(
-                                    b.EstimatedArrival
-                                ).getTime();
-                                const now = Date.now();
-                                return {
-                                    estimatedArrival: new Date(
-                                        b.EstimatedArrival
-                                    ),
-                                    load: b.Load,
-                                    type: b.Type,
-                                    minutesAway: Math.max(
-                                        0,
-                                        Math.round((arrivalTime - now) / 60000)
-                                    ),
-                                    isTracked:
-                                        parseFloat(b.Latitude) !== 0 ||
-                                        parseFloat(b.Longitude) !== 0,
-                                };
-                            }
-                        );
-
-                    return { serviceNo, busStopCode, roadName, timings };
-                } catch (error) {
-                    console.error(`Error fetching bus ${serviceNo}:`, error);
-                    return null;
-                }
-            }
-        );
-
-        const results = await Promise.all(fetchPromises);
-        setGroups(
-            results.filter(
-                (r): r is BusServiceGroup =>
-                    r !== null && r.timings.length > 0
-            )
-        );
-    };
-
     useEffect(() => {
-        getBusTime(BUS_SERVICES);
-        const interval = setInterval(() => getBusTime(BUS_SERVICES), 20000);
-        return () => clearInterval(interval);
-    }, []);
+        const services = BUS_SERVICES.filter((s) => s.roadName === side);
 
-    if (groups.length === 0) {
-        return (
-            <div className="flex w-full items-center justify-center py-8">
-                <p className="text-muted-foreground text-sm text-center">
-                    No buses in operation
-                </p>
-            </div>
-        );
-    }
+        const fetchBusTimes = async () => {
+            const fetchPromises = services.map(
+                async ({ serviceNo, busStopCode, roadName }) => {
+                    try {
+                        const res = await fetch(
+                            `${LTA_API_BASE_URL}?BusStopCode=${busStopCode}&ServiceNo=${serviceNo}`
+                        );
+
+                        if (!res.ok) {
+                            console.error(
+                                `API error for bus ${serviceNo}:`,
+                                res.status
+                            );
+                            return null;
+                        }
+
+                        const data = await res.json();
+
+                        if (!data.Services || !data.Services[0]) {
+                            return null;
+                        }
+
+                        const svc = data.Services[0];
+                        const timings: BusTiming[] = [
+                            svc.NextBus,
+                            svc.NextBus2,
+                            svc.NextBus3,
+                        ]
+                            .filter((b) => b && b.EstimatedArrival)
+                            .map(
+                                (b: {
+                                    EstimatedArrival: string;
+                                    Load: string;
+                                    Type: string;
+                                    Latitude: string;
+                                    Longitude: string;
+                                }) => {
+                                    const arrivalTime = new Date(
+                                        b.EstimatedArrival
+                                    ).getTime();
+                                    const now = Date.now();
+                                    return {
+                                        estimatedArrival: new Date(
+                                            b.EstimatedArrival
+                                        ),
+                                        load: b.Load,
+                                        type: b.Type,
+                                        minutesAway: Math.max(
+                                            0,
+                                            Math.round(
+                                                (arrivalTime - now) / 60000
+                                            )
+                                        ),
+                                        isTracked:
+                                            parseFloat(b.Latitude) !== 0 ||
+                                            parseFloat(b.Longitude) !== 0,
+                                    };
+                                }
+                            );
+
+                        if (timings.length === 0) return null;
+                        return { serviceNo, busStopCode, roadName, timings };
+                    } catch (error) {
+                        console.error(
+                            `Error fetching bus ${serviceNo}:`,
+                            error
+                        );
+                        return null;
+                    }
+                }
+            );
+
+            const results = await Promise.all(fetchPromises);
+            const incoming = results.filter(
+                (r): r is BusServiceGroup => r !== null
+            );
+
+            setGroups((prev) => {
+                if (incoming.length === 0) return prev;
+                const merged = [...prev];
+                incoming.forEach((r) => {
+                    const idx = merged.findIndex(
+                        (g) =>
+                            g.serviceNo === r.serviceNo &&
+                            g.busStopCode === r.busStopCode
+                    );
+                    if (idx >= 0) {
+                        merged[idx] = r;
+                    } else {
+                        merged.push(r);
+                    }
+                });
+                return merged;
+            });
+        };
+
+        fetchBusTimes();
+        const interval = setInterval(fetchBusTimes, 20000);
+        return () => clearInterval(interval);
+    }, [side]);
 
     return (
         <div className="flex w-full flex-col divide-y divide-border">
@@ -219,4 +232,4 @@ export function BusServices() {
             ))}
         </div>
     );
-}
+});
